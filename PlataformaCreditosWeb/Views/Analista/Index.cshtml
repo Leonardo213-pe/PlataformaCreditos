@@ -1,0 +1,97 @@
+@model IEnumerable<PlataformaCreditosWeb.Models.SolicitudCredito>
+@{
+    ViewData["Title"] = "Panel Analista";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>⚙ Panel de Analista</h2>
+    <span class="badge bg-warning text-dark fs-6">
+        @Model.Count() solicitudes pendientes
+    </span>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-success">
+        ✅ No hay solicitudes pendientes por evaluar.
+    </div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Email</th>
+                <th>Ingresos mensuales</th>
+                <th>Monto solicitado</th>
+                <th>Máximo permitido (5x)</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model)
+            {
+                var montoMaximo = s.Cliente.IngresosMensuales * 5;
+                var excede = s.MontoSolicitado > montoMaximo;
+
+                <tr class="@(excede ? "table-danger" : "")">
+                    <td>@s.Id</td>
+                    <td>@s.Cliente.Usuario.NombreCompleto</td>
+                    <td>@s.Cliente.Usuario.Email</td>
+                    <td>S/ @s.Cliente.IngresosMensuales.ToString("N2")</td>
+                    <td>
+                        <strong>S/ @s.MontoSolicitado.ToString("N2")</strong>
+                    </td>
+                    <td>
+                        S/ @montoMaximo.ToString("N2")
+                        @if (excede)
+                        {
+                            <span class="badge bg-danger ms-1">Excede</span>
+                        }
+                    </td>
+                    <td>@s.FechaSolicitud.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        @if (!excede)
+                        {
+                            <form method="post"
+                                  asp-controller="Analista"
+                                  asp-action="Aprobar"
+                                  style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden"
+                                       name="solicitudId"
+                                       value="@s.Id" />
+                                <button type="submit"
+                                        class="btn btn-sm btn-success"
+                                        onclick="return confirm('¿Aprobar esta solicitud?')">
+                                    ✅ Aprobar
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-success"
+                                    disabled title="Excede el monto máximo">
+                                ✅ Aprobar
+                            </button>
+                        }
+                        <a asp-controller="Analista"
+                           asp-action="Rechazar"
+                           asp-route-id="@s.Id"
+                           class="btn btn-sm btn-danger">
+                            ❌ Rechazar
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="alert alert-warning mt-3">
+        <strong>⚠ Nota:</strong> Las filas en rojo indican solicitudes que
+        exceden 5 veces los ingresos del cliente y no pueden ser aprobadas.
+    </div>
+}
