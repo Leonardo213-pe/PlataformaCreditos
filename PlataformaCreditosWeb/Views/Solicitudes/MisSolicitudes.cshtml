@@ -1,0 +1,137 @@
+@model IEnumerable<PlataformaCreditosWeb.Models.SolicitudCredito>
+@{
+    ViewData["Title"] = "Mis Solicitudes";
+    var estadoActual = ViewBag.Estado as string ?? "";
+}
+
+<h2 class="mb-4">📋 Mis Solicitudes</h2>
+
+<!-- Formulario de filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" asp-controller="Solicitudes"
+              asp-action="MisSolicitudes">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Estado</label>
+                    <select name="estado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="Pendiente"
+                            selected="@(estadoActual == "Pendiente" ? "selected" : null)">
+                            Pendiente
+                        </option>
+                        <option value="Aprobado"
+                            selected="@(estadoActual == "Aprobado" ? "selected" : null)">
+                            Aprobado
+                        </option>
+                        <option value="Rechazado"
+                            selected="@(estadoActual == "Rechazado" ? "selected" : null)">
+                            Rechazado
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Monto mín. (S/)</label>
+                    <input name="montoMin" type="number" class="form-control"
+                           value="@ViewBag.MontoMin" min="0" step="0.01" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Monto máx. (S/)</label>
+                    <input name="montoMax" type="number" class="form-control"
+                           value="@ViewBag.MontoMax" min="0" step="0.01" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Fecha desde</label>
+                    <input name="fechaDesde" type="date" class="form-control"
+                           value="@ViewBag.FechaDesde" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Fecha hasta</label>
+                    <input name="fechaHasta" type="date" class="form-control"
+                           value="@ViewBag.FechaHasta" />
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        🔍 Filtrar
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a asp-controller="Solicitudes" asp-action="MisSolicitudes"
+                       class="btn btn-outline-secondary w-100">
+                        ✖ Limpiar
+                    </a>
+                </div>
+                <div class="col-md-3 ms-auto">
+                    <a asp-controller="Solicitudes" asp-action="Nueva"
+                       class="btn btn-success w-100">
+                        + Nueva Solicitud
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No tienes solicitudes registradas.
+        <a asp-controller="Solicitudes" asp-action="Nueva">
+            Crear una nueva
+        </a>.
+    </div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Monto solicitado</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Motivo rechazo</th>
+                <th>Detalle</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td>@s.Id</td>
+                    <td>S/ @s.MontoSolicitado.ToString("N2")</td>
+                    <td>@s.FechaSolicitud.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        @switch (s.Estado)
+                        {
+                            case PlataformaCreditosWeb.Models.EstadoSolicitud.Pendiente:
+                                <span class="badge bg-warning text-dark">
+                                    Pendiente
+                                </span>
+                                break;
+                            case PlataformaCreditosWeb.Models.EstadoSolicitud.Aprobado:
+                                <span class="badge bg-success">Aprobado</span>
+                                break;
+                            case PlataformaCreditosWeb.Models.EstadoSolicitud.Rechazado:
+                                <span class="badge bg-danger">Rechazado</span>
+                                break;
+                        }
+                    </td>
+                    <td>
+                        @(string.IsNullOrEmpty(s.MotivoRechazo) ? "-" : s.MotivoRechazo)
+                    </td>
+                    <td>
+                        <a asp-controller="Solicitudes"
+                           asp-action="Detalle"
+                           asp-route-id="@s.Id"
+                           class="btn btn-sm btn-outline-primary">
+                            Ver →
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
