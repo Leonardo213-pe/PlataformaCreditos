@@ -1,46 +1,106 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - PlataformaCreditosWeb</title>
+    <title>@ViewData["Title"] - Plataforma de Créditos</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/PlataformaCreditosWeb.styles.css" asp-append-version="true" />
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-dark bg-dark mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">PlataformaCreditosWeb</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                    💳 Plataforma de Créditos
+                </a>
+                <button class="navbar-toggler" type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target=".navbar-collapse">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link text-white"
+                               asp-controller="Home"
+                               asp-action="Index">Inicio</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-white"
+                                   asp-controller="Solicitudes"
+                                   asp-action="MisSolicitudes">
+                                    Mis Solicitudes
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Analista"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-warning"
+                                   asp-controller="Analista"
+                                   asp-action="Index">⚙ Panel Analista</a>
+                            </li>
+                        }
+                    </ul>
+
+                    <!-- Última solicitud visitada (sesión P4) -->
+                    @{
+                        var ultimaId = Context.Session.GetString("UltimaSolicitudId");
+                        var ultimoMonto = Context.Session.GetString("UltimaSolicitudMonto");
+                    }
+                    @if (!string.IsNullOrEmpty(ultimaId))
+                    {
+                        <ul class="navbar-nav me-3">
+                            <li class="nav-item">
+                                <a class="nav-link text-info"
+                                   asp-controller="Solicitudes"
+                                   asp-action="Detalle"
+                                   asp-route-id="@ultimaId">
+                                    ↩ Ver última solicitud: S/ @ultimoMonto
+                                </a>
+                            </li>
+                        </ul>
+                    }
+
+                    <ul class="navbar-nav">
+                        <partial name="_LoginPartial" />
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
+
     <div class="container">
+        @if (TempData["Exito"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show">
+                @TempData["Exito"]
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show">
+                @TempData["Error"]
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        }
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - PlataformaCreditosWeb - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="border-top footer text-muted mt-4">
+        <div class="container py-2">
+            &copy; 2026 - Plataforma de Créditos
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

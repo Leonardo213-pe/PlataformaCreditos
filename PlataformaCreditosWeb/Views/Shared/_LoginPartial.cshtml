@@ -1,0 +1,32 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<PlataformaCreditosWeb.Models.ApplicationUser> SignInManager
+@inject UserManager<PlataformaCreditosWeb.Models.ApplicationUser> UserManager
+
+@if (SignInManager.IsSignedIn(User))
+{
+    <li class="nav-item">
+        <span class="nav-link text-white-50">
+            👤 @UserManager.GetUserName(User)
+        </span>
+    </li>
+    <li class="nav-item">
+        <form method="post" action="/Identity/Account/Logout">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="/" />
+            <button type="submit" class="btn btn-link nav-link text-danger">
+                Cerrar sesión
+            </button>
+        </form>
+    </li>
+}
+else
+{
+    <li class="nav-item">
+        <a class="nav-link text-white"
+           href="/Identity/Account/Login">Iniciar sesión</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-white"
+           href="/Identity/Account/Register">Registrarse</a>
+    </li>
+}
