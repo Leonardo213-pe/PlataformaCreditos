@@ -178,4 +178,114 @@ public class SolicitudesController : Controller
             .OrderByDescending(s => s.FechaSolicitud)
             .ToListAsync();
     }
+    // GET: /Solicitudes/Nueva
+[HttpGet]
+public async Task<IActionResult> Nueva()
+{
+    var userId = _userManager.GetUserId(User)!;
+
+    // Verificar si el usuario tiene un cliente activo
+    var cliente = await _db.Clientes
+        .FirstOrDefaultAsync(c => c.UsuarioId == userId);
+
+    if (cliente == null)
+    {
+        TempData["Error"] =
+            "No tienes un perfil de cliente registrado. " +
+            "Contacta al administrador.";
+        return RedirectToAction(nameof(MisSolicitudes));
+    }
+
+    if (!cliente.Activo)
+    {
+        TempData["Error"] = "Tu cuenta de cliente está inactiva.";
+        return RedirectToAction(nameof(MisSolicitudes));
+    }
+
+    ViewBag.IngresosMensuales = cliente.IngresosMensuales;
+    ViewBag.MontoMaximo = cliente.IngresosMensuales * 10;
+
+    return View();
+}
+
+// POST: /Solicitudes/Nueva
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Nueva(decimal montoSolicitado)
+{
+    var userId = _userManager.GetUserId(User)!;
+
+    // Obtener cliente del usuario
+    var cliente = await _db.Clientes
+        .Include(c => c.Solicitudes)
+        .FirstOrDefaultAsync(c => c.UsuarioId == userId);
+
+    // Validación 1: cliente debe existir
+    if (cliente == null)
+    {
+        TempData["Error"] = "No tienes un perfil de cliente registrado.";
+        return RedirectToAction(nameof(MisSolicitudes));
+    }
+
+    // Validación 2: cliente debe estar activo
+    if (!cliente.Activo)
+    {
+        TempData["Error"] = "Tu cuenta de cliente está inactiva.";
+        return RedirectToAction(nameof(MisSolicitudes));
+    }
+
+    // Validación 3: monto no puede ser negativo ni cero
+    if (montoSolicitado <= 0)
+    {
+        TempData["Error"] = "El monto solicitado debe ser mayor a 0.";
+        ViewBag.IngresosMensuales = cliente.IngresosMensuales;
+        ViewBag.MontoMaximo = cliente.IngresosMensuales * 10;
+        return View();
+    }
+
+    // Validación 4: no puede tener más de una solicitud Pendiente
+    var tienePendiente = cliente.Solicitudes
+        .Any(s => s.Estado == EstadoSolicitud.Pendiente);
+
+    if (tienePendiente)
+    {
+        TempData["Error"] =
+            "Ya tienes una solicitud en estado Pendiente. " +
+            "Espera que sea procesada antes de crear una nueva.";
+        return RedirectToAction(nameof(MisSolicitudes));
+    }
+
+    // Validación 5: monto no puede superar 10 veces los ingresos
+    var montoMaximo = cliente.IngresosMensuales * 10;
+    if (montoSolicitado > montoMaximo)
+    {
+        TempData["Error"] =
+            $"El monto solicitado (S/ {montoSolicitado:N2}) no puede superar " +
+            $"10 veces tus ingresos mensuales (S/ {montoMaximo:N2}).";
+        ViewBag.IngresosMensuales = cliente.IngresosMensuales;
+        ViewBag.MontoMaximo = montoMaximo;
+        return View();
+    }
+
+    // Todo OK: crear solicitud en estado Pendiente
+    var solicitud = new SolicitudCredito
+    {
+        ClienteId = cliente.Id,
+        MontoSolicitado = montoSolicitado,
+        Estado = EstadoSolicitud.Pendiente,
+        FechaSolicitud = DateTime.UtcNow
+    };
+
+    _db.SolicitudesCredito.Add(solicitud);
+    await _db.SaveChangesAsync();
+
+    // Invalidar caché del usuario
+    await _cache.RemoveAsync(CACHE_PREFIX + userId);
+
+    TempData["Exito"] =
+        $"Solicitud de S/ {montoSolicitado:N2} registrada correctamente. " +
+        $"Estado: Pendiente.";
+
+    return RedirectToAction(nameof(MisSolicitudes));
+}
 }
