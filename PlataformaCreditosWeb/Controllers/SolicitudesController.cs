@@ -288,4 +288,8 @@ public async Task<IActionResult> Nueva(decimal montoSolicitado)
 
     return RedirectToAction(nameof(MisSolicitudes));
 }
+public async Task InvalidarCacheUsuario(string userId)
+{
+    await _cache.RemoveAsync(CACHE_PREFIX + userId);
+}
 }
